@@ -57,3 +57,15 @@ jobs:
             - SHA256 Checksum: `${{ steps.verify.outputs.new_hash }}`
             - Original URL: `${{ steps.verify.outputs.url }}`
           files: whatpulse.appimage
+      - name: Clean up Old Releases
+        if: steps.verify.outputs.is_new == 'true'
+        run: |
+          NEW_TAG="${{ steps.verify.outputs.new_hash }}"
+          gh release list --json tagName --jq '.[].tagName' | grep -v "^${NEW_TAG}$" | while read -r old_tag; do
+            if [[ -n "$old_tag" ]]; then
+              gh release delete "${old_tag}" --yes
+            fi
+          done
+          echo "Cleanup complete."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
