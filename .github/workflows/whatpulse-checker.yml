@@ -1,0 +1,54 @@
+name: Check for WhatPulse Updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alpine-helper:latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Scrape, Download, and Compare
+        id: verify
+        run: |
+          DOWNLOAD_URL=$(curl -s -L "https://whatpulse.org/downloads" | pup '#btn-download-linux attr{href}')
+          if [[ -z "$DOWNLOAD_URL" ]]; then exit 1; fi
+          echo "url=${DOWNLOAD_URL}" >> "$GITHUB_OUTPUT"
+
+          LATEST_HASH=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r .tag_name || echo "no-previous-release")
+
+          wget -q -O whatpulse.appimage "$DOWNLOAD_URL"
+          NEW_HASH=$(sha256sum whatpulse.appimage | awk '{ print $1 }')
+          echo "new_hash=${NEW_HASH}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$NEW_HASH" == "$LATEST_HASH" ]]; then
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Release
+        if: steps.verify.outputs.is_new == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.verify.outputs.new_hash }}
+          name: WhatPulse Release ${{ steps.verify.outputs.new_hash }}
+          body: |
+            Automated release of the latest WhatPulse AppImage.
+            - SHA256 Checksum: `${{ steps.verify.outputs.new_hash }}`
+            - Original URL: `${{ steps.verify.outputs.url }}`
+          files: whatpulse.appimage
