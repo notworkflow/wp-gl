@@ -14,7 +14,7 @@ https://github.com/fptbb/whatpulse-gearlever/releases/download/*/whatpulse.appim
 
 ## Security
 
-This automation is built with security in mind, using only reputable and fully-auditable GitHub Actions (`actions/checkout`, `softprops/action-gh-release`). The entire process is defined in a single, readable [workflow file](./.github/workflows/whatpulse-checker.yml).
+This automation is built with security in mind, using only reputable and fully-auditable GitHub Actions. The entire process is defined in a single, readable [workflow file](./.github/workflows/whatpulse-checker.yml).
 
 ## Disclaimer
 
