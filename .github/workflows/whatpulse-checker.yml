@@ -40,13 +40,18 @@ jobs:
           else
             echo "is_new=true" >> "$GITHUB_OUTPUT"
           fi
-
+        
+      - name: Get current date
+        if: steps.verify.outputs.is_new == 'true'
+        id: get_date
+        run: echo "date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+        
       - name: Create Release
         if: steps.verify.outputs.is_new == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.verify.outputs.new_hash }}
-          name: WhatPulse Release ${{ steps.verify.outputs.new_hash }}
+          name: WhatPulse Release - ${{ steps.get_date.outputs.date }}
           body: |
             Automated release of the latest WhatPulse AppImage.
             - SHA256 Checksum: `${{ steps.verify.outputs.new_hash }}`
