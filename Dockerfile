@@ -1,5 +1,5 @@
 # Start from the minimal and stable Debian "slim" image
-FROM debian:slim-bullseye
+FROM debian:stable-slim
 
 # Install all dependencies using apt-get and clean up to keep the image small
 RUN apt-get update && apt-get install -y --no-install-recommends \
