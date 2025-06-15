@@ -65,48 +65,27 @@ jobs:
       - name: Clean up Old Releases
         if: steps.verify.outputs.is_new == 'true'
         run: |
-          # Enable verbose command tracing
-          set -x
-
-          echo "--- Starting Cleanup Step ---"
-
-          echo "1. Configuring git safe.directory..."
+          # Add the repository as a safe directory for git commands
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          echo "git config command finished with exit code $?."
 
           NEW_TAG="${{ steps.verify.outputs.new_hash }}"
-          echo "2. New tag is set to: ${NEW_TAG}"
-
-          echo "3. Listing all release tags..."
-          # Store the list of tags in a variable to inspect it
-          ALL_TAGS=$(gh release list --json tagName --jq '.[].tagName')
-          echo "gh release list command finished with exit code $?."
-          echo "All tags found:
-          ${ALL_TAGS}"
-
-          echo "4. Filtering out the new tag..."
-          # Store the list of old tags to inspect it
-          OLD_TAGS=$(echo "${ALL_TAGS}" | grep -v "^${NEW_TAG}$" || true)
-          echo "grep command finished with exit code $?."
-          echo "Old tags to be deleted:
-          ${OLD_TAGS}"
-
-          # Check if there are any old tags to delete
-          if [[ -z "$OLD_TAGS" ]]; then
-            echo "No old tags to delete. Finishing cleanup."
-            exit 0
-          fi
-
-          echo "5. Starting loop to delete old tags..."
-          echo "${OLD_TAGS}" | while read -r old_tag; do
-            if [[ -n "$old_tag" ]]; then
-              echo "---"
-              echo "Attempting to delete old release and tag: ${old_tag}"
-              gh release delete "${old_tag}" --yes
-              echo "Deletion of ${old_tag} finished with exit code $?."
-            fi
-          done
+          echo "New release created. Cleaning up old releases (if any)..."
           
-          echo "--- Cleanup script finished ---"
+          # List all tags, filter out the new one, and loop through the rest to delete them.
+          # The '|| true' ensures this command doesn't fail if grep finds no matches.
+          OLD_TAGS=$(gh release list --json tagName --jq '.[].tagName' | grep -v "^${NEW_TAG}$" || true)
+
+          if [[ -z "$OLD_TAGS" ]]; then
+            echo "No old releases to delete."
+          else
+            echo "$OLD_TAGS" | while read -r old_tag; do
+              if [[ -n "$old_tag" ]]; then
+                echo "Deleting old release and tag: ${old_tag}"
+                gh release delete "${old_tag}" --yes
+              fi
+            done
+          fi
+          
+          echo "Cleanup complete."
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
