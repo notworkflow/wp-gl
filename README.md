@@ -1,18 +1,18 @@
 # Automated WhatPulse AppImage
 
-[![WhatPulse Update Check](https://github.com/fptbb/whatpulse-gearlever/actions/workflows/whatpulse-checker.yml/badge.svg)](https://github.com/fptbb/whatpulse-gearlever/actions/workflows/whatpulse-checker.yml)
+[![WhatPulse Update Check](https://github.com/notworkflow/wp-gl/actions/workflows/whatpulse-checker.yml/badge.svg)](https://github.com/notworkflow/wp-gl/actions/workflows/whatpulse-checker.yml)
 
 (Update) This might not be needed for you, a user found out on discord and told me that a static url [indeed exist](https://releases.whatpulse.org/latest/linux/whatpulse-linux-latest_amd64.AppImage) (robby250), it could substitute this script.
 
-This repository automatically packages the latest official WhatPulse AppImage into a GitHub Release. This provides a simple, versioned source for easy integration with tools like [GearLever](https://github.com/mijorus/gearlever), using a pre-built [helper image](https://github.com/fptbb/whatpulse-gearlever/pkgs/container/alpine-helper) to ensure minimal workflow execution time.
+This repository automatically packages the latest official WhatPulse AppImage into a GitHub Release. This provides a simple, versioned source for easy integration with tools like [GearLever](https://github.com/mijorus/gearlever), using a pre-built [helper image](https://github.com/notworkflow/wp-gl/pkgs/container/alpine-helper) to ensure minimal workflow execution time.
 
 The latest AppImage can always be downloaded using this stable URL:
 
-https://github.com/fptbb/whatpulse-gearlever/releases/latest/download/whatpulse.appimage
+https://github.com/notworkflow/wp-gl/releases/latest/download/whatpulse.appimage
 
 You can also add the url as source for gearlever with Github setting as:
 
-https://github.com/fptbb/whatpulse-gearlever/releases/download/*/whatpulse.appimage
+https://github.com/notworkflow/wp-gl/releases/download/*/whatpulse.appimage
 
 ## Security
 
