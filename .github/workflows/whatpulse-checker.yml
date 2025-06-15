@@ -12,7 +12,7 @@ jobs:
   check-and-release:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/alpine-helper:latest
+      image: ghcr.io/${{ github.repository_owner }}/whatpulse-helper:latest
 
     defaults:
       run:
@@ -22,47 +22,60 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Scrape, Download, and Compare
+      - name: Download and Verify AppImage
         id: verify
         run: |
-          DOWNLOAD_URL=$(curl -s -L "https://whatpulse.org/downloads" | pup '#btn-download-linux attr{href}')
-          if [[ -z "$DOWNLOAD_URL" ]]; then exit 1; fi
-          echo "url=${DOWNLOAD_URL}" >> "$GITHUB_OUTPUT"
+          # Use the stable, direct download URL
+          DIRECT_URL="https://releases.whatpulse.org/latest/linux/whatpulse-linux-latest_amd64.AppImage"
+          echo "url=${DIRECT_URL}" >> "$GITHUB_OUTPUT"
 
+          # Get the hash of our latest release from the GitHub API
           LATEST_HASH=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r .tag_name || echo "no-previous-release")
-
-          wget -q -O whatpulse.appimage "$DOWNLOAD_URL"
+          
+          # Download the file from the direct link and calculate its hash
+          echo "Downloading from stable URL..."
+          wget -q -O whatpulse.appimage "$DIRECT_URL"
           NEW_HASH=$(sha256sum whatpulse.appimage | awk '{ print $1 }')
           echo "new_hash=${NEW_HASH}" >> "$GITHUB_OUTPUT"
-
+          
+          # Compare hashes to see if the file has actually changed
           if [[ "$NEW_HASH" == "$LATEST_HASH" ]]; then
+            echo "File content is identical to the latest release. No update needed."
             echo "is_new=false" >> "$GITHUB_OUTPUT"
           else
+            echo "File content has changed. A new release is required."
             echo "is_new=true" >> "$GITHUB_OUTPUT"
+            # Generate the .zsync file for the new version
+            zsyncmake -u "https://github.com/${{ github.repository }}/releases/download/${NEW_HASH}/whatpulse.appimage" whatpulse.appimage
           fi
-        
+
       - name: Get current date
         if: steps.verify.outputs.is_new == 'true'
         id: get_date
         run: echo "date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
-        
-      - name: Create Release
+
+      - name: Create New Release
         if: steps.verify.outputs.is_new == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.verify.outputs.new_hash }}
           name: WhatPulse Release - ${{ steps.get_date.outputs.date }}
           body: |
-            Automated release of the latest WhatPulse AppImage.
+            Automated release of the latest WhatPulse AppImage with Zsync support for delta updates.
             - SHA256 Checksum: `${{ steps.verify.outputs.new_hash }}`
             - Original URL: `${{ steps.verify.outputs.url }}`
-          files: whatpulse.appimage
+          files: |
+            whatpulse.appimage
+            whatpulse.appimage.zsync
+
       - name: Clean up Old Releases
         if: steps.verify.outputs.is_new == 'true'
         run: |
           NEW_TAG="${{ steps.verify.outputs.new_hash }}"
+          echo "New release created with tag ${NEW_TAG}. Cleaning up old releases."
           gh release list --json tagName --jq '.[].tagName' | grep -v "^${NEW_TAG}$" | while read -r old_tag; do
             if [[ -n "$old_tag" ]]; then
+              echo "Deleting old release and tag: ${old_tag}"
               gh release delete "${old_tag}" --yes
             fi
           done
