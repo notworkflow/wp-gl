@@ -6,4 +6,5 @@ RUN apk add \
     curl \
     coreutils \
     tar \
-    wget
+    wget \
+    zsync
